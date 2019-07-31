@@ -7,6 +7,8 @@ Support python3.
 * arrow
 * dataset
 * mysqlclient
+* argparse
+
 
 ### Install 
 
