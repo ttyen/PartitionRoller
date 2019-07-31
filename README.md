@@ -7,7 +7,7 @@ Support python3.
 * arrow
 * dataset
 * mysqlclient
-* argparse
+* argparse  <= 2019/7/31 replace with this module for optparse
 
 
 ### Install 
