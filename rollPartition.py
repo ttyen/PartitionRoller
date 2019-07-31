@@ -1,43 +1,41 @@
-
-# by lonslonz, 2015-06-02
-
 import sys
 import arrow
 import dataset
-from optparse import OptionParser
+import argparse
 
-def main(options, args):
+def main(args):
 
     curr = arrow.now()
     print ("Current time : ", curr)
 
-    if(options.basis == "daily") :
+    if(args.basis == "daily") :
         curr = curr.floor('day')
-        remove = curr.replace(days=-options.removePart)
-        add = curr.replace(days=+options.addPart)
+        remove = curr.replace(days=-args.remove)
+        add = curr.replace(days=+args.add)
         partitionNameFormat = 'YYYYMMDD'
         timeFormat = 'YYYY-MM-DD 00:00:00'
-    elif(options.basis == "monthly"):
+    elif(args.basis == "monthly"):
         curr = curr.floor('month')
-        remove = curr.replace(months=-options.removePart)
-        add = curr.replace(months=+options.addPart)
+        remove = curr.replace(months=-args.remove)
+        add = curr.replace(months=+args.add)
         partitionNameFormat = 'YYYYMMDD';
         timeFormat = 'YYYY-MM-DD 00:00:00'
     else:
         curr = curr.floor('hour')
-        remove = curr.replace(hours=-options.removePart)
-        add = curr.replace(hours=+options.addPart)
+        remove = curr.replace(hours=-args.remove)
+        add = curr.replace(hours=+args.add)
         partitionNameFormat = 'YYYYMMDDHH'
         timeFormat = 'YYYY-MM-DD HH:00:00';
 
-    removeQuery = "alter table %s drop partition p%s" % (options.table, remove.format(partitionNameFormat))
+    removeQuery = "alter table %s drop partition p%s" % (args.table, remove.format(partitionNameFormat))
     addQuery = "alter table %s add partition (partition p%s values less than (unix_timestamp('%s')))" % \
-           (options.table, add.format(partitionNameFormat), add.format(timeFormat))
+           (args.table, add.format(partitionNameFormat), add.format(timeFormat))
 
-    uri = "mysql://" + options.user + ":" + options.password + "@" + options.host + "/" + options.db
+    uri = "mysql://" + args.user + ":" + args.password + "@" + args.host + "/" + args.database
+    print(uri)
 
     try:
-        if not options.verbose :
+        if not args.verbose :
             db = dataset.connect(uri)
     except Exception as e:
         print (e)
@@ -45,7 +43,7 @@ def main(options, args):
     try:
         print ("+ Remove a partition")
         print ("\t- Query: ", removeQuery)
-        if not options.verbose :
+        if not args.verbose :
             result = db.query(removeQuery)
         print("\t- Success")
     except Exception as e:
@@ -54,7 +52,7 @@ def main(options, args):
     try:
         print("+ Add a partition")
         print("\t- Query", addQuery)
-        if not options.verbose :
+        if not args.verbose :
             result = db.query(addQuery)
         print ("\t- Success")
     except Exception as e:
@@ -65,28 +63,25 @@ def main(options, args):
 
 if __name__ == '__main__':
 
-    parser = OptionParser()
-    parser.add_option("-H", "--host", action = "store", type = "string", dest = "host",
+    parser = argparse.ArgumentParser(description='Process some integers.')
+    parser.add_argument("-H", "--host", nargs='?',  default = "127.0.0.1",
                       help = "MySQL database name")
-    parser.add_option("-d", "--database", action = "store", type = "string", dest = "db",
+    parser.add_argument("-d", "--database",  default = "aiot",
                       help = "MySQL Server Address")
-    parser.add_option("-t", "--table", action = "store", type = "string", dest="table",
+    parser.add_argument("-t", "--table", default="daily",
                       help = "MySQL Table")
-    parser.add_option("-u", "--user", action = "store", type = "string", dest="user",
+    parser.add_argument("-u", "--user", default="aiot",
                       help = "MySQL User Id")
-    parser.add_option("-p", "--password", action = "store", type = "string", dest="password",
+    parser.add_argument("-p", "--password", default="",
                       help = "MySQL User Password")
-    parser.add_option("-a", "--add", action = "store", type = "int", dest="addPart",
+    parser.add_argument("-a", "--add", type = int, default=7,
                   help = "a partition to be added ")
-    parser.add_option("-r", "--remove", action = "store", type = "int", dest="removePart",
+    parser.add_argument("-r", "--remove", type = int, default=7,
                   help = "a partition to be removed")
-    parser.add_option("-b", "--basis", action = "store", type = "choice", dest="basis", default="daily",
+    parser.add_argument("-b", "--basis", default="daily",
                       choices=['daily', 'monthly', 'hourly'], help = "time basis")
-    parser.add_option("-v", "--verbose", action = "store_true", dest="verbose", default=False, help = "only print query")
+    parser.add_argument("-v", "--verbose", default=False, help = "only print query")
 
-    (options, args) = parser.parse_args()
-    print (options)
-    print ("database : ", options.db)
-    print (args)
-    main(options, args)
+    args = parser.parse_args()
 
+    main(args)
